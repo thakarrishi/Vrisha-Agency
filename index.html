@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color" content="#06090C"/>
+  <title>Vrisha Agency</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap');
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+    html,body{background:#06090C;min-height:100vh;font-family:'DM Mono',monospace;}
+    button,input,select,textarea{font-family:'DM Mono',monospace;cursor:pointer;}
+    input::placeholder{color:#2A3545;}
+    select option{background:#0A0E14;}
+    ::-webkit-scrollbar{width:3px;} ::-webkit-scrollbar-thumb{background:#1A2535;border-radius:3px;}
+    @keyframes fd{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fu{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .card{background:#0A0E14;border:1px solid #131B26;border-radius:8px;}
+    .row{background:#0A0E14;border:1px solid #131B26;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+    .pg{padding:14px;max-width:860px;margin:0 auto;padding-bottom:80px;}
+    @media(min-width:580px){.pg{padding:22px 28px 80px;}}
+    .sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+    @media(min-width:460px){.sg{grid-template-columns:repeat(4,1fr);}}
+    .cg{display:grid;grid-template-columns:1fr;gap:10px;}
+    @media(min-width:480px){.cg{grid-template-columns:1fr 1fr;}}
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;align-items:flex-end;justify-content:center;z-index:1000;}
+    @media(min-width:580px){.modal-bg{align-items:center;padding:20px;}}
+    .modal{background:#0A0E14;border:1px solid #1A2535;width:100%;max-height:90vh;overflow-y:auto;border-radius:16px 16px 0 0;animation:fu .22s ease;}
+    @media(min-width:580px){.modal{border-radius:10px;max-width:520px;}}
+    .modal-wide{background:#0A0E14;border:1px solid #1A2535;width:100%;max-height:90vh;display:flex;flex-direction:column;border-radius:16px 16px 0 0;animation:fu .22s ease;}
+    @media(min-width:580px){.modal-wide{border-radius:10px;max-width:640px;}}
+    .bnav{position:fixed;bottom:0;left:0;right:0;background:#06090C;border-top:1px solid #131B26;display:flex;z-index:900;padding-bottom:env(safe-area-inset-bottom,0);}
+    .nb{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 2px 7px;border:none;background:none;gap:3px;}
+    .nl{font-size:9px;letter-spacing:0.5px;text-transform:uppercase;}
+    .finp{background:#080C10;border:1px solid #1A2535;border-radius:6px;padding:12px 14px;color:#D0C8BC;font-size:14px;width:100%;outline:none;}
+    .finp:focus{border-color:#F0A500;}
+    .tw{overflow-x:auto;}
+    input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0.3);}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState} = React;
+
+const TODAY = new Date("2026-03-04");
+const RTYPES = ["Order Status Report","Shipment Tracking Report","Quality Inspection Report","Payment Outstanding Report","Monthly Summary Report","Compliance & Audit Report","Custom Report"];
+
+const IC = [
+  {id:1,name:"Zara International",email:"buyer@zara.com",country:"Spain",contact:"+34 900 123 456",whatsapp:"34900123456"},
+  {id:2,name:"H&M Sourcing",email:"sourcing@hm.com",country:"Sweden",contact:"+46 31 700 0000",whatsapp:"46317000000"},
+  {id:3,name:"Marks & Spencer",email:"supply@marksandspencer.com",country:"UK",contact:"+44 20 7935 4422",whatsapp:"442079354422"},
+];
+const IR = [
+  {id:1,clientId:1,vendorName:"Apex Garments",type:"Payment Outstanding Report",dueDate:"2026-03-05",status:"overdue",notes:"Invoice: INV-2025-089",amount:"₹4,20,000",lastSent:null},
+  {id:2,clientId:1,vendorName:"BlueStar Exports",type:"Payment Outstanding Report",dueDate:"2026-03-06",status:"overdue",notes:"Invoice: BS-441",amount:"₹1,85,000",lastSent:null},
+  {id:3,clientId:1,vendorName:"Regal Fabrics",type:"Payment Outstanding Report",dueDate:"2026-03-08",status:"pending",notes:"Invoice: RF-2026-12",amount:"₹2,60,000",lastSent:null},
+  {id:4,clientId:1,vendorName:"SilkRoute Co.",type:"Payment Outstanding Report",dueDate:"2026-03-12",status:"pending",notes:"Invoice: SR-088",amount:"₹95,000",lastSent:null},
+  {id:5,clientId:2,vendorName:"BlueStar Exports",type:"Shipment Tracking Report",dueDate:"2026-03-07",status:"pending",notes:"Container HLCU4892311",amount:null,lastSent:null},
+  {id:6,clientId:3,vendorName:"Apex Garments",type:"Quality Inspection Report",dueDate:"2026-03-10",status:"pending",notes:"Lot B2 inspection",amount:null,lastSent:null},
+];
+
+function daysUntil(d){return Math.round((new Date(d)-TODAY)/86400000);}
+function parseAmt(s){if(!s)return 0;const n=parseFloat(s.replace(/[^0-9.]/g,""));return isNaN(n)?0:n;}
+function toWANum(s){return s?(s+"").replace(/[\s\-()+.]/g,""):""; }
+function openWA(num,msg){window.open("https://wa.me/"+toWANum(num)+"?text="+encodeURIComponent(msg),"_blank");}
+
+function pickFile(accept, cb){
+  const el=document.createElement("input");
+  el.type="file"; el.accept=accept;
+  el.style.cssText="position:fixed;top:-999px;left:-999px;opacity:0;";
+  document.body.appendChild(el);
+  el.onchange=function(e){
+    if(e.target.files && e.target.files[0]) cb(e.target.files[0]);
+    setTimeout(function(){try{document.body.removeChild(el);}catch(ex){}},2000);
+  };
+  setTimeout(function(){el.click();},10);
+}
+
+async function claude(msgs, maxTok){
+  const r=await fetch("/api/claude",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:maxTok||1000,messages:msgs})
+  });
+  const d=await r.json();
+  if(d.error)throw new Error(d.error.message||"API error");
+  return (d.content||[]).map(function(i){return i.text||"";}).join("");
+}
+
+function Tag(p){
+  var m={overdue:{c:"#FF4D4D",bg:"#1A0A0A"},pending:{c:"#F0A500",bg:"#1A1200"},sent:{c:"#34C759",bg:"#0A1A0A"}};
+  var x=m[p.s]||m.pending;
+  return React.createElement("span",{style:{color:x.c,background:x.bg,border:"1px solid "+x.c+"33",borderRadius:4,padding:"2px 8px",fontSize:10,fontWeight:700,letterSpacing:1}},p.s.toUpperCase());
+}
+
+function Btn(p){
+  var base={border:"none",borderRadius:6,cursor:"pointer",fontFamily:"'DM Mono',monospace",letterSpacing:0.5,fontSize:11,padding:"11px 18px"};
+  var styles={gold:{background:"#F0A500",color:"#06090C",fontWeight:700},ghost:{background:"none",border:"1px solid #1A2535",color:"#C8C0B4"},green:{background:"#34C759",color:"#06090C",fontWeight:700},wa:{background:"#25D366",color:"#fff",fontWeight:700},red:{background:"none",border:"1px solid #FF4D4D22",color:"#FF4D4D",padding:"6px 10px",fontSize:9}};
+  var st=Object.assign({},base,styles[p.v||"ghost"],p.style||{});
+  return React.createElement("button",{style:st,onClick:p.onClick,disabled:p.disabled||false},p.children);
+}
+
+function buildWATable(rows,total,cname,draft){
+  var pad=function(s,l){return String(s||"").substring(0,l).padEnd(l);};
+  var V=16,I=10,A=11,S=7;
+  var div="-".repeat(V)+"-|-"+"-".repeat(I)+"-|-"+"-".repeat(A)+"-|-"+"-".repeat(S);
+  var hdr=pad("Vendor",V)+" | "+pad("Invoice",I)+" | "+pad("Amount",A)+" | "+pad("Status",S);
+  var body=rows.map(function(r){return pad(r.vendorName,V)+" | "+pad((r.notes||"").split("·")[0].replace("Invoice:","").trim(),I)+" | "+pad(r.amount,A)+" | "+pad(daysUntil(r.dueDate)<0?"OVERDUE":"PENDING",S);}).join("\n");
+  return "*VRISHA AGENCY — Outstanding Statement*\n━━━━━━━━━━━━━━━━━━━━━━━━\nDear "+cname+",\n\nPlease find consolidated outstanding details below:\n\n```\n"+hdr+"\n"+div+"\n"+body+"\n"+div+"\n"+pad("TOTAL",V)+" | "+pad("",I)+" | "+pad("₹"+total.toLocaleString("en-IN"),A)+" |\n```\n\n"+draft+"\n\nKindly revert with payment timeline.\n\n*Vrisha Agency*";
+}
+
+function App(){
+  var st=useState; // alias
+  var _tab=st("dashboard"); var tab=_tab[0],setTab=_tab[1];
+  var _cl=st(IC); var clients=_cl[0],setClients=_cl[1];
+  var _rp=st(IR); var reports=_rp[0],setReports=_rp[1];
+  var _nt=st(null); var notif=_nt[0],setNotif=_nt[1];
+  var _ac=st(false); var showAC=_ac[0],setShowAC=_ac[1];
+  var _ar=st(false); var showAR=_ar[0],setShowAR=_ar[1];
+  var _nc=st({name:"",email:"",country:"",contact:"",whatsapp:""}); var newC=_nc[0],setNewC=_nc[1];
+  var _nr=st({clientId:"",vendorName:"",type:"",dueDate:"",notes:"",amount:""}); var newR=_nr[0],setNewR=_nr[1];
+  var _sm=st(null); var sendModal=_sm[0],setSendModal=_sm[1];
+  var _ad=st(""); var aiDraft=_ad[0],setAiDraft=_ad[1];
+  var _al=st(false); var aiLoad=_al[0],setAiLoad=_al[1];
+  var _cm=st(null); var conModal=_cm[0],setConModal=_cm[1];
+  var _cd=st(""); var conDraft=_cd[0],setConDraft=_cd[1];
+  var _clo=st(false); var conLoad=_clo[0],setConLoad=_clo[1];
+  var _sc=st([]); var selCon=_sc[0],setSelCon=_sc[1];
+  var _ps=st("upload"); var pdfStep=_ps[0],setPdfStep=_ps[1];
+  var _pp=st(false); var pdfParsing=_pp[0],setPdfParsing=_pp[1];
+  var _pst=st(""); var pdfStatus=_pst[0],setPdfStatus=_pst[1];
+  var _pe=st(""); var pdfErr=_pe[0],setPdfErr=_pe[1];
+  var _pr=st([]); var parsedRows=_pr[0],setParsedRows=_pr[1];
+  var _sr=st([]); var selRows=_sr[0],setSelRows=_sr[1];
+  var _pv=st(""); var pdfVendor=_pv[0],setPdfVendor=_pv[1];
+
+  function notify(msg,type){setNotif({msg:msg,type:type||"success"});setTimeout(function(){setNotif(null);},3000);}
+  function getCl(id){return clients.find(function(c){return c.id===id;})||{};}
+  function matchCl(name){
+    if(!name)return null;
+    var n=name.toLowerCase().trim();
+    return clients.find(function(c){return c.name.toLowerCase().includes(n)||n.includes(c.name.toLowerCase().split(" ")[0]);});
+  }
+
+  var overdue=reports.filter(function(r){return r.status!=="sent"&&daysUntil(r.dueDate)<0;});
+  var dueSoon=reports.filter(function(r){return r.status!=="sent"&&daysUntil(r.dueDate)>=0&&daysUntil(r.dueDate)<=3;});
+  var upcoming=reports.filter(function(r){return r.status!=="sent"&&daysUntil(r.dueDate)>3;});
+  var sent=reports.filter(function(r){return r.status==="sent";});
+
+  function mvClients(){
+    return clients.map(function(cl){
+      var active=reports.filter(function(r){return r.clientId===cl.id&&r.status!=="sent"&&r.amount;});
+      var vendors=[...new Set(active.map(function(r){return r.vendorName;}).filter(Boolean))];
+      var total=active.reduce(function(s,r){return s+parseAmt(r.amount);},0);
+      return {client:cl,active:active,vendors:vendors,total:total};
+    }).filter(function(x){return x.active.length>=1;});
+  }
+
+  function effSt(r){return r.status==="sent"?"sent":daysUntil(r.dueDate)<0?"overdue":r.status;}
+
+  function markSent(id){setReports(function(p){return p.map(function(r){return r.id===id?Object.assign({},r,{status:"sent",lastSent:"2026-03-04"}):r;});});setSendModal(null);setAiDraft("");notify("Marked as sent!");}
+  function markConSent(ids){setReports(function(p){return p.map(function(r){return ids.includes(r.id)?Object.assign({},r,{status:"sent",lastSent:"2026-03-04"}):r;});});setConModal(null);setConDraft("");notify(ids.length+" reports marked as sent!");}
+  function delReport(id){setReports(function(p){return p.filter(function(r){return r.id!==id;});});notify("Deleted","info");}
+  function delClient(id){if(!window.confirm("Remove this client and all their reports?"))return;setClients(function(p){return p.filter(function(c){return c.id!==id;});});setReports(function(p){return p.filter(function(r){return r.clientId!==id;});});notify("Client removed","info");}
+  function addClient(){if(!newC.name)return;setClients(function(p){return[...p,Object.assign({},newC,{id:Date.now()})];});setNewC({name:"",email:"",country:"",contact:"",whatsapp:""});setShowAC(false);notify("Client added!");}
+  function addReport(){if(!newR.clientId||!newR.type||!newR.dueDate)return;var d=daysUntil(newR.dueDate);setReports(function(p){return[...p,Object.assign({},newR,{id:Date.now(),clientId:parseInt(newR.clientId),status:d<0?"overdue":"pending",lastSent:null})];});setNewR({clientId:"",vendorName:"",type:"",dueDate:"",notes:"",amount:""});setShowAR(false);notify("Report scheduled!");}
+
+  async function genAI(report){
+    var cl=getCl(report.clientId);
+    setSendModal(report);setAiDraft("");setAiLoad(true);
+    try{
+      var text=await claude([{role:"user",content:"Vrisha Agency follow-up.\nClient: "+cl.name+"\nReport: "+report.type+"\nDue: "+report.dueDate+"\n"+(report.amount?"Amount: "+report.amount:"")+"\nVendor: "+(report.vendorName||"N/A")+"\nNotes: "+(report.notes||"N/A")+"\nWrite concise professional WhatsApp message body only, under 80 words."}]);
+      setAiDraft(text);
+    }catch(e){setAiDraft("Failed: "+e.message);}
+    setAiLoad(false);
+  }
+
+  async function genCon(data,ids){
+    var cl=data.client;
+    var rows=data.active.filter(function(r){return ids.includes(r.id);});
+    var total=rows.reduce(function(s,r){return s+parseAmt(r.amount);},0);
+    setConLoad(true);setConDraft("");
+    try{
+      var text=await claude([{role:"user",content:"You are Vrisha Agency. Write a short WhatsApp follow-up note (2-3 sentences, no greeting, no sign-off) asking "+cl.name+" for payment of ₹"+total.toLocaleString("en-IN")+" outstanding across "+rows.length+" vendors. Polite but firm. Under 60 words."}]);
+      setConDraft(text);
+    }catch(e){setConDraft("Failed: "+e.message);}
+    setConLoad(false);
+  }
+
+  async function handlePdf(file){
+    if(!file){setPdfErr("No file selected.");return;}
+    if(file.type!=="application/pdf"&&!file.name.toLowerCase().endsWith(".pdf")){setPdfErr("Please select a PDF file.");return;}
+    setPdfErr("");setPdfParsing(true);setPdfStatus("Reading file...");
+    try{
+      var b64=await new Promise(function(res,rej){
+        var reader=new FileReader();
+        reader.onload=function(){res(reader.result.split(",")[1]);};
+        reader.onerror=function(){rej(new Error("Could not read file"));};
+        reader.readAsDataURL(file);
+      });
+      setPdfStatus("Sending to AI (10-30 sec)...");
+      var raw=await claude([{role:"user",content:[
+        {type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}},
+        {type:"text",text:"You are an expert at reading RMG vendor outstanding PDFs.\nThis PDF may have one or many client entries. Extract EVERY outstanding entry.\n\nReturn ONLY a valid JSON array. Each object must have:\n- clientName (string)\n- vendorName (string or null)\n- invoiceNo (string or null)\n- invoiceDate (YYYY-MM-DD or null)\n- amount (string with symbol e.g. \"₹4,20,000\" or null)\n- dueDate (YYYY-MM-DD; 30d aging=2026-04-03, 60d=2026-05-03, 90d=2026-06-03, default=2026-03-25)\n- agingDays (number or null)\n- status (\"overdue\" if aging>60 or past due, else \"pending\")\n- notes (string or null)\n\nReturn ONLY the JSON array. No markdown, no explanation."}
+      ]}],4000);
+      setPdfStatus("Extracting entries...");
+      var match=raw.match(/\[[\s\S]*\]/);
+      if(!match)throw new Error("No data found in this PDF.");
+      var parsed=JSON.parse(match[0]);
+      if(!Array.isArray(parsed)||parsed.length===0)throw new Error("No outstanding entries found.");
+      setPdfVendor((parsed.find(function(r){return r.vendorName;})||{}).vendorName||"");
+      setParsedRows(parsed.map(function(r,i){return Object.assign({},r,{_idx:i,_match:matchCl(r.clientName)});}));
+      setSelRows(parsed.map(function(_,i){return i;}));
+      setPdfStep("review");
+    }catch(e){setPdfErr(e.message||"Failed to read PDF.");}
+    setPdfParsing(false);setPdfStatus("");
+  }
+
+  function confirmImport(){
+    var toAdd=parsedRows.filter(function(_,i){return selRows.includes(i);});
+    var uc=[...clients];
+    var nr=toAdd.map(function(row){
+      var cid=row._match&&row._match.id;
+      if(!cid){var nc={id:Date.now()+Math.random(),name:row.clientName,email:"",country:"",contact:"",whatsapp:""};uc=[...uc,nc];cid=nc.id;}
+      var dd=row.dueDate||"2026-03-25";
+      return {id:Date.now()+Math.random(),clientId:cid,vendorName:pdfVendor||row.vendorName||"Unknown",type:"Payment Outstanding Report",dueDate:dd,status:daysUntil(dd)<0?"overdue":"pending",notes:[row.invoiceNo&&("Invoice: "+row.invoiceNo),row.invoiceDate&&("Date: "+row.invoiceDate),row.notes].filter(Boolean).join(" · ")||"",amount:row.amount||null,lastSent:null};
+    });
+    setClients(uc);setReports(function(p){return[...p,...nr];});
+    notify(nr.length+" reports imported!");
+    setPdfStep("done");
+    setTimeout(function(){setPdfStep("upload");setParsedRows([]);setSelRows([]);setPdfVendor("");},2500);
+  }
+
+  function importVCF(text){
+    var cards=text.split(/BEGIN:VCARD/gi).filter(function(c){return c.trim();});
+    var added=0;
+    var updates=[];
+    cards.forEach(function(card){
+      var nm=card.match(/FN[^:]*:(.+)/i);
+      var te=card.match(/TEL[^:]*:([\+\d\s()\-\.]+)/i);
+      var em=card.match(/EMAIL[^:]*:(.+)/i);
+      var name=nm?nm[1].trim().replace(/\r/g,""):null;
+      var tel=te?te[1].trim().replace(/[\s()\-\.]/g,""):null;
+      var email=em?em[1].trim().replace(/\r/g,""):null;
+      if(name)updates.push({name:name,email:email||"",contact:tel||"",whatsapp:tel?tel.replace(/^\+/,""):""});
+    });
+    setClients(function(prev){
+      var updated=[...prev];
+      updates.forEach(function(u){
+        if(!updated.find(function(c){return c.name.toLowerCase()===u.name.toLowerCase();})){
+          updated.push(Object.assign({},u,{id:Date.now()+Math.random(),country:""}));
+          added++;
+        }
+      });
+      return updated;
+    });
+    setTimeout(function(){notify(added>0?(added+" contact"+(added>1?"s":"")+" imported!"):"No new contacts found","info");},200);
+  }
+
+  var INP={background:"#080C10",border:"1px solid #1A2535",borderRadius:6,padding:"12px 14px",color:"#D0C8BC",fontSize:14,width:"100%",outline:"none"};
+  var MH={padding:"18px 18px 14px",borderBottom:"1px solid #131B26"};
+  var MB={padding:"14px 18px"};
+  var MF={padding:"12px 18px",borderTop:"1px solid #131B26",display:"flex",gap:8,flexWrap:"wrap"};
+
+  var WASV=<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>;
+
+  var NAV=[{id:"dashboard",l:"Overview"},{id:"consolidated",l:"Merge"},{id:"import",l:"Import"},{id:"reports",l:"Reports"},{id:"clients",l:"Clients"},{id:"reminders",l:"Remind"}];
+
+  return (
+    <div style={{background:"#06090C",minHeight:"100vh",color:"#C8C0B4"}}>
+
+      {notif&&<div style={{position:"fixed",top:12,left:"50%",transform:"translateX(-50%)",zIndex:9999,background:notif.type==="success"?"#0A1A0A":"#1A1200",border:"1px solid "+(notif.type==="success"?"#34C75966":"#F0A50066"),color:notif.type==="success"?"#34C759":"#F0A500",padding:"10px 20px",borderRadius:40,fontSize:11,fontWeight:500,animation:"fd .2s ease",whiteSpace:"nowrap"}}>{notif.msg}</div>}
+
+      <div style={{background:"#06090C",borderBottom:"1px solid #131B26",padding:"0 16px",position:"sticky",top:0,zIndex:800}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",height:50,maxWidth:860,margin:"0 auto"}}>
+          <div style={{letterSpacing:3,fontSize:13,textTransform:"uppercase"}}>
+            <span style={{color:"#D0C8BC",fontWeight:500}}>Vrisha</span>
+            <span style={{color:"#2A3545",fontWeight:300}}> Agency</span>
+          </div>
+          <div style={{display:"flex",gap:10,fontSize:10}}>
+            {overdue.length>0&&<span style={{color:"#FF4D4D"}}>{overdue.length} overdue</span>}
+            {dueSoon.length>0&&<span style={{color:"#F0A500"}}>{dueSoon.length} due soon</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="pg">
+
+        {/* DASHBOARD */}
+        {tab==="dashboard"&&<div style={{animation:"fd .25s ease"}}>
+          <div style={{marginBottom:16,paddingTop:4}}>
+            <div style={{fontSize:10,color:"#2A3545",letterSpacing:1,marginBottom:3}}>04 MARCH 2026</div>
+            <div style={{fontSize:19,fontWeight:500,color:"#D0C8BC"}}>Outstanding Overview</div>
+          </div>
+          <div className="sg">
+            {[{l:"TOTAL",v:reports.length,c:"#4A90E2"},{l:"OVERDUE",v:overdue.length,c:"#FF4D4D"},{l:"DUE SOON",v:dueSoon.length,c:"#F0A500"},{l:"SENT",v:sent.length,c:"#34C759"}].map(function(s){return(
+              <div key={s.l} className="card" style={{padding:"14px"}}>
+                <div style={{fontSize:24,fontWeight:500,color:s.c,marginBottom:3}}>{s.v}</div>
+                <div style={{fontSize:9,color:"#2A3545",letterSpacing:1}}>{s.l}</div>
+              </div>
+            );})}
+          </div>
+          {mvClients().some(function(x){return x.vendors.length>1;})&&(
+            <div className="card" style={{padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
+              <div style={{flex:1}}><div style={{fontSize:11,color:"#34C759",marginBottom:2}}>Multi-vendor outstandings ready</div><div style={{fontSize:10,color:"#2A3545"}}>Merge into one statement</div></div>
+              <Btn v="ghost" style={{color:"#34C759",borderColor:"#34C75944",fontSize:10,padding:"6px 12px",whiteSpace:"nowrap"}} onClick={function(){setTab("consolidated");}}>MERGE →</Btn>
+            </div>
+          )}
+          {overdue.length>0&&<>
+            <div style={{fontSize:9,color:"#FF4D4D",letterSpacing:1,marginBottom:8}}>— OVERDUE</div>
+            {overdue.map(function(r){var cl=getCl(r.clientId),d=daysUntil(r.dueDate);return(
+              <div key={r.id} className="row" style={{borderColor:"#FF4D4D1A"}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,color:"#D0C8BC",marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cl.name}</div>
+                  <div style={{fontSize:10,color:"#2A3545"}}>{r.vendorName} · <span style={{color:"#FF4D4D"}}>{Math.abs(d)}d overdue</span>{r.amount&&<span style={{color:"#FF4D4D"}}> · {r.amount}</span>}</div>
+                </div>
+                <Btn v="ghost" style={{color:"#FF4D4D",borderColor:"#FF4D4D44",fontSize:10,padding:"6px 12px",whiteSpace:"nowrap"}} onClick={function(){genAI(r);}}>SEND</Btn>
+              </div>
+            );})}
+          </>}
+          {dueSoon.length>0&&<>
+            <div style={{fontSize:9,color:"#F0A500",letterSpacing:1,marginBottom:8,marginTop:14}}>— DUE SOON</div>
+            {dueSoon.map(function(r){var cl=getCl(r.clientId),d=daysUntil(r.dueDate);return(
+              <div key={r.id} className="row" style={{borderColor:"#F0A5001A"}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,color:"#D0C8BC",marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cl.name}</div>
+                  <div style={{fontSize:10,color:"#2A3545"}}>{r.vendorName} · <span style={{color:"#F0A500"}}>in {d}d</span>{r.amount&&<span style={{color:"#F0A500"}}> · {r.amount}</span>}</div>
+                </div>
+                <Btn v="ghost" style={{color:"#F0A500",borderColor:"#F0A50044",fontSize:10,padding:"6px 12px",whiteSpace:"nowrap"}} onClick={function(){genAI(r);}}>PREP</Btn>
+              </div>
+            );})}
+          </>}
+          {overdue.length===0&&dueSoon.length===0&&<div className="card" style={{padding:"36px",textAlign:"center"}}><div style={{fontSize:10,color:"#2A3545",letterSpacing:1}}>ALL CLEAR</div></div>}
+        </div>}
+
+        {/* CONSOLIDATED */}
+        {tab==="consolidated"&&<div style={{animation:"fd .25s ease"}}>
+          <div style={{fontSize:19,fontWeight:500,color:"#D0C8BC",marginBottom:16,paddingTop:4}}>Consolidated Statements</div>
+          {mvClients().length===0
+            ?<div className="card" style={{padding:"36px",textAlign:"center"}}><div style={{fontSize:10,color:"#2A3545",letterSpacing:1}}>NO ACTIVE OUTSTANDINGS</div></div>
+            :mvClients().map(function(x){var cl=x.client,active=x.active,vendors=x.vendors,total=x.total;var hasOv=active.some(function(r){return daysUntil(r.dueDate)<0;});return(
+              <div key={cl.id} className="card" style={{padding:"14px 16px",marginBottom:12,borderColor:hasOv?"#FF4D4D1A":"#131B26"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                  <div><div style={{fontSize:13,fontWeight:500,color:"#D0C8BC",marginBottom:2}}>{cl.name}</div><div style={{fontSize:10,color:"#2A3545"}}>{vendors.length} vendor{vendors.length!==1?"s":""}</div></div>
+                  <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:500,color:hasOv?"#FF4D4D":"#F0A500"}}>₹{total.toLocaleString("en-IN")}</div><div style={{fontSize:9,color:"#2A3545",letterSpacing:0.5}}>OUTSTANDING</div></div>
+                </div>
+                <div className="tw" style={{marginBottom:12}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,background:"#080C10",borderRadius:6}}>
+                    <thead><tr style={{borderBottom:"1px solid #131B26"}}>
+                      {["Vendor","Invoice","Amount","Status"].map(function(h){return <th key={h} style={{padding:"8px 10px",textAlign:"left",color:"#2A3545",fontWeight:400}}>{h}</th>;})}
+                    </tr></thead>
+                    <tbody>{active.map(function(r,i){var ov=daysUntil(r.dueDate)<0;return(
+                      <tr key={r.id} style={{borderBottom:i<active.length-1?"1px solid #0E141C":"none"}}>
+                        <td style={{padding:"8px 10px",color:"#C8C0B4"}}>{r.vendorName||"—"}</td>
+                        <td style={{padding:"8px 10px",color:"#2A3545",fontSize:10}}>{(r.notes||"").split("·")[0].replace("Invoice:","").trim()||"—"}</td>
+                        <td style={{padding:"8px 10px",color:ov?"#FF4D4D":"#34C759",fontWeight:500}}>{r.amount||"—"}</td>
+                        <td style={{padding:"8px 10px"}}><Tag s={ov?"overdue":"pending"}/></td>
+                      </tr>
+                    );})}
+                    </tbody>
+                    <tfoot><tr style={{borderTop:"1px solid #131B26"}}>
+                      <td colSpan={2} style={{padding:"8px 10px",color:"#F0A500",fontWeight:500}}>TOTAL</td>
+                      <td style={{padding:"8px 10px",color:"#F0A500",fontWeight:500}}>₹{total.toLocaleString("en-IN")}</td>
+                      <td></td>
+                    </tr></tfoot>
+                  </table>
+                </div>
+                <Btn v="ghost" style={{width:"100%",padding:"10px",letterSpacing:0.5}} onClick={function(){setSelCon(active.map(function(r){return r.id;}));setConDraft("");setConModal({client:cl,active:active,vendors:vendors,total:total});genCon({client:cl,active:active,vendors:vendors,total:total},active.map(function(r){return r.id;}));}}>GENERATE MESSAGE →</Btn>
+              </div>
+            );})}
+        </div>}
+
+        {/* IMPORT */}
+        {tab==="import"&&<div style={{animation:"fd .25s ease"}}>
+          <div style={{fontSize:19,fontWeight:500,color:"#D0C8BC",marginBottom:16,paddingTop:4}}>Import Vendor PDF</div>
+          <div style={{display:"flex",gap:6,marginBottom:16,alignItems:"center"}}>
+            {["Upload","Review","Done"].map(function(s,i){var cur=["upload","review","done"].indexOf(pdfStep);return(
+              <div key={s} style={{display:"flex",alignItems:"center",gap:5}}>
+                <div style={{width:20,height:20,borderRadius:"50%",background:cur===i?"#F0A500":cur>i?"#34C759":"#131B26",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700,color:"#06090C"}}>{cur>i?"✓":i+1}</div>
+                <span style={{fontSize:9,color:cur===i?"#F0A500":"#2A3545",letterSpacing:0.5,textTransform:"uppercase"}}>{s}</span>
+                {i<2&&<span style={{color:"#1A2535",margin:"0 4px"}}>›</span>}
+              </div>
+            );})}
+          </div>
+
+          {pdfStep==="upload"&&<>
+            <div className="card" style={{padding:"36px 20px",textAlign:"center",borderStyle:"dashed",borderColor:pdfParsing?"#F0A500":"#1A2535"}}>
+              {pdfParsing?(
+                <div>
+                  <div style={{fontSize:24,marginBottom:10}}>⏳</div>
+                  <div style={{fontSize:11,color:"#F0A500",letterSpacing:1,marginBottom:6}}>{pdfStatus||"PROCESSING..."}</div>
+                  <div style={{fontSize:10,color:"#2A3545"}}>Please wait 15–30 seconds</div>
+                </div>
+              ):(
+                <div>
+                  <div style={{fontSize:32,marginBottom:12}}>📄</div>
+                  <div style={{fontSize:11,color:"#C8C0B4",marginBottom:6}}>Select your vendor outstanding PDF</div>
+                  <div style={{fontSize:10,color:"#2A3545",marginBottom:20,lineHeight:1.6}}>Single-client or multi-client — any format</div>
+                  <Btn v="gold" style={{fontSize:12,padding:"13px 32px",letterSpacing:1,display:"block",margin:"0 auto"}} onClick={function(){pickFile("application/pdf,.pdf",handlePdf);}}>CHOOSE PDF FILE</Btn>
+                  <div style={{marginTop:12,fontSize:9,color:"#1A2535"}}>or drag & drop below</div>
+                </div>
+              )}
+            </div>
+            {!pdfParsing&&<div style={{marginTop:8,height:48,border:"1px dashed #1A2535",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center"}}
+              onDragOver={function(e){e.preventDefault();e.currentTarget.style.borderColor="#F0A500";}}
+              onDragLeave={function(e){e.currentTarget.style.borderColor="#1A2535";}}
+              onDrop={function(e){e.preventDefault();e.currentTarget.style.borderColor="#1A2535";var f=e.dataTransfer.files[0];if(f)handlePdf(f);}}>
+              <span style={{fontSize:10,color:"#1A2535",letterSpacing:0.5}}>DROP PDF HERE</span>
+            </div>}
+            {pdfErr&&<div style={{marginTop:12,padding:"12px 14px",background:"#1A0A0A",border:"1px solid #FF4D4D44",borderRadius:6,color:"#FF4D4D",fontSize:11,lineHeight:1.6}}>
+              <div style={{fontWeight:700,marginBottom:4}}>ERROR</div>{pdfErr}
+            </div>}
+            <div className="card" style={{marginTop:14,padding:"12px 14px"}}>
+              <div style={{fontSize:9,color:"#2A3545",letterSpacing:1,marginBottom:10}}>HOW IT WORKS</div>
+              {["Save PDF from WhatsApp to your phone","Tap CHOOSE PDF FILE above","AI reads all outstanding entries","Review entries and tap IMPORT"].map(function(s,i){return(
+                <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:8}}>
+                  <div style={{width:18,height:18,borderRadius:"50%",background:"#131B26",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#F0A500",flexShrink:0}}>{i+1}</div>
+                  <div style={{fontSize:11,color:"#2A3545",paddingTop:1}}>{s}</div>
+                </div>
+              );})}
+            </div>
+          </>}
+
+          {pdfStep==="review"&&parsedRows.length>0&&<>
+            <div className="card" style={{padding:"12px 14px",marginBottom:12,display:"flex",gap:16,flexWrap:"wrap",alignItems:"center"}}>
+              {[{v:parsedRows.length,l:"ENTRIES",c:"#F0A500"},{v:parsedRows.filter(function(r){return daysUntil(r.dueDate)<0;}).length,l:"OVERDUE",c:"#FF4D4D"},{v:parsedRows.filter(function(r){return r._match;}).length,l:"MATCHED",c:"#34C759"}].map(function(s){return(
+                <div key={s.l}><div style={{fontSize:18,fontWeight:500,color:s.c}}>{s.v}</div><div style={{fontSize:9,color:"#2A3545",letterSpacing:1}}>{s.l}</div></div>
+              );})}
+              {pdfVendor&&<div style={{marginLeft:"auto",fontSize:11,color:"#C8C0B4"}}>{pdfVendor}</div>}
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+              <Btn v="ghost" onClick={function(){setPdfStep("upload");setParsedRows([]);setPdfErr("");}}>← BACK</Btn>
+              <Btn v="ghost" style={{color:"#C8C0B4"}} onClick={function(){setSelRows(parsedRows.map(function(_,i){return i;}));}}>ALL</Btn>
+              <Btn v="ghost" style={{color:"#2A3545"}} onClick={function(){setSelRows([]);}}>NONE</Btn>
+              <Btn v="gold" style={{flex:1}} onClick={confirmImport}>IMPORT {selRows.length} →</Btn>
+            </div>
+            {parsedRows.map(function(row,i){
+              var ov=daysUntil(row.dueDate)<0,checked=selRows.includes(i);
+              return(
+                <div key={i} className="card" style={{padding:"12px 14px",marginBottom:8,opacity:checked?1:0.4,cursor:"pointer",borderColor:checked?(ov?"#FF4D4D22":"#34C75922"):"#131B26"}}
+                  onClick={function(){setSelRows(checked?selRows.filter(function(x){return x!==i;}):[...selRows,i]);}}>
+                  <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                    <div style={{width:18,height:18,borderRadius:3,border:"1px solid "+(checked?"#F0A500":"#2A3545"),background:checked?"#F0A500":"transparent",flexShrink:0,marginTop:2,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      {checked&&<span style={{color:"#06090C",fontSize:10,fontWeight:700}}>✓</span>}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:4,marginBottom:5}}>
+                        <div>
+                          <div style={{fontSize:13,color:"#D0C8BC",fontWeight:500}}>{row.clientName||"Unknown"}</div>
+                          <div style={{fontSize:10,color:row._match?"#34C759":"#F0A500",marginTop:1}}>{row._match?"✓ matched":"⚠ new client"}</div>
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <div style={{fontSize:13,fontWeight:500,color:ov?"#FF4D4D":"#34C759"}}>{row.amount||"—"}</div>
+                          <Tag s={ov?"overdue":"pending"}/>
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:10,color:"#2A3545"}}>
+                        {row.invoiceNo&&<span>INV: {row.invoiceNo}</span>}
+                        {row.invoiceDate&&<span>Date: {row.invoiceDate}</span>}
+                        {row.dueDate&&<span>Due: {row.dueDate}</span>}
+                        {row.agingDays&&<span style={{color:ov?"#FF4D4D":"#F0A500"}}>{row.agingDays}d</span>}
+                      </div>
+                      {row.notes&&<div style={{marginTop:4,fontSize:10,color:"#2A3545",fontStyle:"italic"}}>{row.notes}</div>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <Btn v="gold" style={{width:"100%",marginTop:8,padding:"13px",fontSize:12,letterSpacing:1}} onClick={confirmImport}>IMPORT {selRows.length} ENTRIES →</Btn>
+          </>}
+
+          {pdfStep==="done"&&<div className="card" style={{padding:"48px",textAlign:"center"}}>
+            <div style={{fontSize:10,color:"#34C759",letterSpacing:1,marginBottom:16}}>IMPORT COMPLETE ✓</div>
+            <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+              <Btn v="ghost" onClick={function(){setTab("dashboard");setPdfStep("upload");}}>DASHBOARD</Btn>
+              <Btn v="ghost" style={{color:"#34C759",borderColor:"#34C75944"}} onClick={function(){setTab("consolidated");setPdfStep("upload");}}>MERGE & SEND →</Btn>
+            </div>
+          </div>}
+        </div>}
+
+        {/* REPORTS */}
+        {tab==="reports"&&<div style={{animation:"fd .25s ease"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,paddingTop:4}}>
+            <div style={{fontSize:19,fontWeight:500,color:"#D0C8BC"}}>Reports</div>
+            <Btn v="ghost" style={{color:"#C8C0B4",fontSize:10,padding:"7px 12px"}} onClick={function(){setShowAR(true);}}>+ NEW</Btn>
+          </div>
+          {reports.length===0&&<div className="card" style={{padding:"36px",textAlign:"center"}}><div style={{fontSize:10,color:"#2A3545",letterSpacing:1}}>NO REPORTS YET</div></div>}
+          {reports.map(function(r){var cl=getCl(r.clientId),ef=effSt(r);return(
+            <div key={r.id} className="row">
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4,flexWrap:"wrap"}}>
+                  <span style={{fontSize:12,color:"#D0C8BC"}}>{cl.name||"Unknown"}</span>
+                  <Tag s={ef}/>
+                  {r.amount&&<span style={{fontSize:11,color:"#F0A500"}}>{r.amount}</span>}
+                </div>
+                <div style={{fontSize:10,color:"#2A3545",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.vendorName} · {r.dueDate}</div>
+              </div>
+              <div style={{display:"flex",gap:5,flexShrink:0}}>
+                {ef!=="sent"&&<Btn v="ghost" style={{color:"#C8C0B4",padding:"5px 9px",fontSize:9}} onClick={function(){genAI(r);}}>SEND</Btn>}
+                <Btn v="red" onClick={function(){delReport(r.id);}}>✕</Btn>
+              </div>
+            </div>
+          );})}
+        </div>}
+
+        {/* CLIENTS */}
+        {tab==="clients"&&<div style={{animation:"fd .25s ease"}}>
+          <div style={{marginBottom:14,paddingTop:4}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div style={{fontSize:19,fontWeight:500,color:"#D0C8BC"}}>Clients</div>
+              <Btn v="gold" style={{fontSize:10,padding:"8px 14px"}} onClick={function(){setShowAC(true);}}>+ NEW</Btn>
+            </div>
+            <div className="card" style={{padding:"11px 14px",display:"flex",alignItems:"center",gap:12}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,color:"#C8C0B4",marginBottom:2}}>Import from Phone Contacts</div>
+                <div style={{fontSize:10,color:"#2A3545"}}>Export .vcf from your phone → import here</div>
+              </div>
+              <Btn v="ghost" style={{color:"#4A90E2",borderColor:"#4A90E244",fontSize:10,padding:"8px 12px",whiteSpace:"nowrap"}} onClick={function(){pickFile(".vcf,.vcard,text/vcard",function(f){var rd=new FileReader();rd.onload=function(e){importVCF(e.target.result);};rd.readAsText(f);});}}>📲 IMPORT .VCF</Btn>
+            </div>
+          </div>
+          {clients.length===0&&<div className="card" style={{padding:"36px",textAlign:"center"}}><div style={{fontSize:10,color:"#2A3545",letterSpacing:1}}>NO CLIENTS YET</div></div>}
+          <div className="cg">
+            {clients.map(function(c){
+              var cr=reports.filter(function(r){return r.clientId===c.id;});
+              var ov=cr.filter(function(r){return r.status!=="sent"&&daysUntil(r.dueDate)<0;}).length;
+              var total=cr.filter(function(r){return r.status!=="sent";}).reduce(function(s,r){return s+parseAmt(r.amount);},0);
+              var vnds=[...new Set(cr.filter(function(r){return r.status!=="sent"&&r.amount;}).map(function(r){return r.vendorName;}).filter(Boolean))].length;
+              return(
+                <div key={c.id} className="card" style={{padding:"14px",borderColor:ov>0?"#FF4D4D1A":"#131B26"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                    <div style={{width:32,height:32,background:"#131B26",borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:500,color:"#F0A500"}}>{c.name.charAt(0).toUpperCase()}</div>
+                    {ov>0&&<Tag s="overdue"/>}
+                  </div>
+                  <div style={{fontSize:13,fontWeight:500,color:"#D0C8BC",marginBottom:6}}>{c.name}</div>
+                  {c.email&&<div style={{fontSize:10,color:"#2A3545",marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.email}</div>}
+                  {c.country&&<div style={{fontSize:10,color:"#2A3545",marginBottom:2}}>{c.country}</div>}
+                  {c.whatsapp?<div style={{fontSize:10,color:"#25D366",marginBottom:2}}>💬 +{c.whatsapp}</div>:<div style={{fontSize:9,color:"#1A2535",marginBottom:2}}>no whatsapp</div>}
+                  <div style={{height:1,background:"#131B26",margin:"8px 0"}}/>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"#2A3545",marginBottom:10}}>
+                    <span>{cr.length} reports · {vnds}v</span>
+                    {total>0&&<span style={{color:"#FF4D4D"}}>₹{total.toLocaleString("en-IN")}</span>}
+                  </div>
+                  <Btn v="red" style={{width:"100%",padding:"7px",fontSize:9,letterSpacing:0.5}} onClick={function(){delClient(c.id);}}>REMOVE CLIENT</Btn>
+                </div>
+              );
+            })}
+          </div>
+        </div>}
+
+        {/* REMINDERS */}
+        {tab==="reminders"&&<div style={{animation:"fd .25s ease"}}>
+          <div style={{fontSize:19,fontWeight:500,color:"#D0C8BC",marginBottom:16,paddingTop:4}}>Reminders</div>
+          {[{title:"OVERDUE",items:overdue,col:"#FF4D4D"},{title:"DUE SOON",items:dueSoon,col:"#F0A500"},{title:"UPCOMING",items:upcoming,col:"#4A90E2"},{title:"SENT",items:sent,col:"#34C759"}].map(function(g){return g.items.length>0&&(
+            <div key={g.title} style={{marginBottom:20}}>
+              <div style={{fontSize:9,color:g.col,letterSpacing:1,marginBottom:8}}>— {g.title}</div>
+              {g.items.map(function(r){var cl=getCl(r.clientId),d=daysUntil(r.dueDate);return(
+                <div key={r.id} className="row" style={{borderLeft:"2px solid "+g.col,borderRadius:"0 8px 8px 0"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,color:"#D0C8BC",marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cl.name}</div>
+                    <div style={{fontSize:10,color:"#2A3545"}}>{r.vendorName} · {r.dueDate}
+                      {r.status!=="sent"&&<span style={{color:g.col,marginLeft:5}}>{d<0?Math.abs(d)+"d over":d===0?"today":"+"+d+"d"}</span>}
+                      {r.amount&&<span style={{color:g.col,marginLeft:5}}>{r.amount}</span>}
+                      {r.lastSent&&<span style={{color:"#34C759",marginLeft:5}}>✓</span>}
+                    </div>
+                  </div>
+                  {r.status!=="sent"&&<Btn v="ghost" style={{color:g.col,borderColor:g.col+"44",padding:"5px 9px",fontSize:9,whiteSpace:"nowrap"}} onClick={function(){genAI(r);}}>SEND</Btn>}
+                </div>
+              );})}
+            </div>
+          );})}
+        </div>}
+
+      </div>
+
+      {/* BOTTOM NAV */}
+      <nav className="bnav">
+        {NAV.map(function(t){return(
+          <button key={t.id} className="nb" onClick={function(){setTab(t.id);}}>
+            <div style={{width:4,height:4,borderRadius:"50%",background:tab===t.id?"#F0A500":"transparent",marginBottom:2}}/>
+            <span className="nl" style={{color:tab===t.id?"#D0C8BC":"#2A3545"}}>{t.l}</span>
+          </button>
+        );})}
+      </nav>
+
+      {/* CONSOLIDATED MODAL */}
+      {conModal&&(
+        <div className="modal-bg">
+          <div className="modal-wide">
+            <div style={MH}>
+              <div style={{fontSize:13,fontWeight:500,color:"#D0C8BC",marginBottom:2}}>{conModal.client.name}</div>
+              <div style={{fontSize:10,color:"#2A3545"}}>{conModal.vendors.length} vendors · <span style={{color:"#FF4D4D"}}>₹{conModal.active.filter(function(r){return selCon.includes(r.id);}).reduce(function(s,r){return s+parseAmt(r.amount);},0).toLocaleString("en-IN")}</span></div>
+            </div>
+            <div style={{padding:"12px 18px",borderBottom:"1px solid #0E141C",flexShrink:0}}>
+              <div style={{fontSize:9,color:"#2A3545",letterSpacing:1,marginBottom:8}}>INCLUDE IN STATEMENT</div>
+              {conModal.active.map(function(r){return(
+                <label key={r.id} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:8}}>
+                  <input type="checkbox" checked={selCon.includes(r.id)} onChange={function(e){setSelCon(e.target.checked?[...selCon,r.id]:selCon.filter(function(x){return x!==r.id;}));}} style={{width:16,height:16}}/>
+                  <span style={{fontSize:12,flex:1,color:"#C8C0B4"}}>{r.vendorName}</span>
+                  <span style={{fontSize:11,color:"#F0A500"}}>{r.amount}</span>
+                  <span style={{fontSize:10,color:daysUntil(r.dueDate)<0?"#FF4D4D":"#2A3545"}}>{daysUntil(r.dueDate)<0?"OVERDUE":r.dueDate}</span>
+                </label>
+              );})}
+            </div>
+            <div style={{flex:1,overflow:"auto",padding:"12px 18px"}}>
+              <div style={{fontSize:9,color:"#2A3545",letterSpacing:1,marginBottom:7}}>AI DRAFT</div>
+              <div className="card" style={{padding:"12px",minHeight:70}}>{conLoad?<div style={{fontSize:10,color:"#2A3545",textAlign:"center",padding:"16px 0"}}>generating…</div>:<div style={{fontSize:11,color:"#C8C0B4",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{conDraft}</div>}</div>
+            </div>
+            <div style={MF}>
+              {conModal.client.whatsapp?(
+                <Btn v="wa" onClick={function(){if(!conDraft){notify("Generate draft first","info");return;}var rows=conModal.active.filter(function(r){return selCon.includes(r.id);});var tot=rows.reduce(function(s,r){return s+parseAmt(r.amount);},0);openWA(conModal.client.whatsapp,buildWATable(rows,tot,conModal.client.name,conDraft));}}>{WASV} WHATSAPP</Btn>
+              ):(
+                <Btn v="ghost" style={{color:"#25D366",borderColor:"#25D36633",borderStyle:"dashed"}} onClick={function(){notify("Add WhatsApp no. in Clients tab","info");}}>+ WA NO.</Btn>
+              )}
+              <Btn v="green" style={{flex:1}} onClick={function(){markConSent(selCon);}}>MARK SENT ({selCon.length})</Btn>
+              <Btn v="ghost" style={{color:"#F0A500",padding:"11px 12px"}} onClick={function(){genCon(conModal,selCon);}}>↺</Btn>
+              <Btn v="ghost" style={{padding:"11px 12px"}} onClick={function(){setConModal(null);setConDraft("");}}>✕</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SEND MODAL */}
+      {sendModal&&(
+        <div className="modal-bg">
+          <div className="modal">
+            <div style={MH}>
+              <div style={{fontSize:13,fontWeight:500,color:"#D0C8BC",marginBottom:2}}>{getCl(sendModal.clientId).name}</div>
+              <div style={{fontSize:10,color:"#2A3545"}}>{sendModal.type}{sendModal.amount&&<span style={{color:"#FF4D4D",marginLeft:7}}>{sendModal.amount}</span>}</div>
+            </div>
+            <div style={MB}>
+              <div style={{fontSize:9,color:"#2A3545",letterSpacing:1,marginBottom:7}}>AI DRAFT</div>
+              <div className="card" style={{padding:"12px",minHeight:90}}>{aiLoad?<div style={{fontSize:10,color:"#2A3545",textAlign:"center",padding:"16px 0"}}>generating…</div>:<div style={{fontSize:11,color:"#C8C0B4",lineHeight:1.7,whiteSpace:"pre-wrap"}}>{aiDraft}</div>}</div>
+            </div>
+            <div style={MF}>
+              {(function(){var cl=getCl(sendModal.clientId);return cl.whatsapp&&(
+                <Btn v="wa" onClick={function(){if(!aiDraft){notify("Generate draft first","info");return;}openWA(cl.whatsapp,"*Outstanding Follow-Up*\n\nDear "+cl.name+",\n\n"+aiDraft+"\n\nThank you,\n*Vrisha Agency*");}}>{WASV} WA</Btn>
+              );})()}
+              <Btn v="green" style={{flex:1}} onClick={function(){markSent(sendModal.id);}}>MARK SENT</Btn>
+              <Btn v="ghost" style={{color:"#F0A500",padding:"11px 12px"}} onClick={function(){genAI(sendModal);}}>↺</Btn>
+              <Btn v="ghost" style={{padding:"11px 12px"}} onClick={function(){setSendModal(null);setAiDraft("");}}>✕</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD CLIENT MODAL */}
+      {showAC&&(
+        <div className="modal-bg">
+          <div className="modal">
+            <div style={MH}><div style={{fontSize:13,fontWeight:500,color:"#D0C8BC"}}>New Client</div></div>
+            <div style={{...MB,display:"flex",flexDirection:"column",gap:10}}>
+              {[["name","Company / Buyer Name *"],["email","Email"],["country","Country"],["contact","Phone Number"],["whatsapp","WhatsApp Number (e.g. 919876543210)"]].map(function(x){return(
+                <input key={x[0]} style={INP} placeholder={x[1]} value={newC[x[0]]} onChange={function(e){setNewC(Object.assign({},newC,{[x[0]]:e.target.value}));}}/>
+              );})}
+            </div>
+            <div style={MF}>
+              <Btn v="gold" style={{flex:1}} onClick={addClient}>ADD CLIENT</Btn>
+              <Btn v="ghost" onClick={function(){setShowAC(false);}}>CANCEL</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD REPORT MODAL */}
+      {showAR&&(
+        <div className="modal-bg">
+          <div className="modal">
+            <div style={MH}><div style={{fontSize:13,fontWeight:500,color:"#D0C8BC"}}>Schedule Report</div></div>
+            <div style={{...MB,display:"flex",flexDirection:"column",gap:10}}>
+              <select style={INP} value={newR.clientId} onChange={function(e){setNewR(Object.assign({},newR,{clientId:e.target.value}));}}>
+                <option value="">Select Client *</option>
+                {clients.map(function(c){return <option key={c.id} value={c.id}>{c.name}</option>;})}
+              </select>
+              <input style={INP} placeholder="Vendor / Supplier Name" value={newR.vendorName} onChange={function(e){setNewR(Object.assign({},newR,{vendorName:e.target.value}));}}/>
+              <select style={INP} value={newR.type} onChange={function(e){setNewR(Object.assign({},newR,{type:e.target.value}));}}>
+                <option value="">Report Type *</option>
+                {RTYPES.map(function(t){return <option key={t} value={t}>{t}</option>;})}
+              </select>
+              <input style={INP} type="date" value={newR.dueDate} onChange={function(e){setNewR(Object.assign({},newR,{dueDate:e.target.value}));}}/>
+              <input style={INP} placeholder="Amount (e.g. ₹2,50,000)" value={newR.amount} onChange={function(e){setNewR(Object.assign({},newR,{amount:e.target.value}));}}/>
+              <input style={INP} placeholder="Notes / Invoice ref" value={newR.notes} onChange={function(e){setNewR(Object.assign({},newR,{notes:e.target.value}));}}/>
+            </div>
+            <div style={MF}>
+              <Btn v="gold" style={{flex:1}} onClick={addReport}>SCHEDULE</Btn>
+              <Btn v="ghost" onClick={function(){setShowAR(false);}}>CANCEL</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+var MH={padding:"18px 18px 14px",borderBottom:"1px solid #131B26"};
+var MB={padding:"14px 18px"};
+var MF={padding:"12px 18px",borderTop:"1px solid #131B26",display:"flex",gap:8,flexWrap:"wrap"};
+var INP={background:"#080C10",border:"1px solid #1A2535",borderRadius:6,padding:"12px 14px",color:"#D0C8BC",fontSize:14,width:"100%",outline:"none"};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
